@@ -1,14 +1,15 @@
-import React, { useState } from 'react'
-import '../App.css';
+import React, { useState, useEffect } from 'react'
 import { Field, Form, Formik } from 'formik';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import * as yup from 'yup';
+import axios from 'axios';
 import { NavLink, useNavigate } from 'react-router-dom';
+import BaseUrl from '../../../config/BaseUrl'
 
 const validationSchema = yup.object({
-    email: yup
-        .string('Enter your email')
+    officialemail: yup
+        .string('Enter your officialemail')
         .required('Email is required')
         .matches(/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/, "Invalid Email Format"),
     password: yup
@@ -25,7 +26,12 @@ const Login = () => {
             setShowPassword(false)
         }
     }
-
+    useEffect(() => {
+        let login = localStorage.getItem('token');
+        if(login){
+            navigate(`/company/profile/${window.localStorage.getItem('id')}`)
+        }
+      })
     return (
         <>
             <div className="bg-blue-100">
@@ -35,7 +41,7 @@ const Login = () => {
                         <div className="relative flex h-16 items-center justify-between">
                             <div className="flex flex-1 items-center justify-end sm:items-stretch sm:justify-end">
                                 <div className="flex space-x-4">
-                                    <a href="login.html" className="text-black hover:bg-gray-200  px-3 py-2 rounded-md text-sm font-medium">Login</a>
+                                    <NavLink to="/signup" className="text-black hover:bg-gray-200  px-3 py-2 rounded-md text-sm font-medium">signup</NavLink>
                                 </div>
                             </div>
                         </div>
@@ -50,36 +56,64 @@ const Login = () => {
                             <h2 className=" text-center text-2xl font-semibold tracking-tight text-gray-900"> <a href="login.html"> Login</a></h2>
                         </div>
                         <Formik
-                            initialValues={{ email:'', password:'' }}
-                            validationSchema={validationSchema} 
+                            initialValues={{ officialemail:'',  password:'' }}
+                            validationSchema={validationSchema}
                             onSubmit={(values) => {
-                             console.log(values,"login Data")
-                             localStorage.setItem('token','id')
-                             toast.success("Your Login SuccessFully", {
-                                position: "top-right",
-                                autoClose: 5000,
-                                hideProgressBar: false,
-                                closeOnClick: true,
-                                pauseOnHover: true,
-                                draggable: true,
-                                progress: undefined,
-                                theme:'colored'
-                                });
-                              setTimeout(() => {
-                                  navigate('/')
-                              }, 2000);
-                            }}>
+                                axios({
+                                method: 'POST',
+                                url: `${BaseUrl.url}/login`,
+                                data:{
+                                    officialemail:values.officialemail,
+                                    password:values.password,
+                                }
+                                }).then((res)=>{
+                                    
+                                    setTimeout(() => {
+                                        navigate(`/company/profile/${res.data.id}`)
+                                },3000);
+                                localStorage.setItem('token',res.data.token,true)
+                                localStorage.setItem('id',res.data.id)
+                                toast.success(res.data.message, {
+                                    position: "top-right",
+                                    autoClose: 2000,
+                                    hideProgressBar: false,
+                                    closeOnClick: true,
+                                    pauseOnHover: true,
+                                    draggable: true,
+                                    progress: undefined,
+                                    theme:'colored'
+                                    });
+                                })
+                                .catch((err)=>{
+                                setIsLoading(true)
+                                    setBtnDisable(true)
+                                    setTimeout(() => {
+                                    setIsLoading(false)
+                                    setBtnDisable(false)
+                                    },3000);
+                                toast.error(err.response.data.message, {
+                                    position: "top-right",
+                                    autoClose: 2000,
+                                    hideProgressBar: false,
+                                    closeOnClick: true,
+                                    pauseOnHover: true,
+                                    draggable: true,
+                                    progress: undefined,
+                                    theme:'colored'
+                                    });
+                                })
+                            }}
+                            >
                              {({ errors, touched }) => (
                             <Form className="mt-8 space-y-4">
-                                {/* <input type="hidden" name="remember" defaultValue="true" /> */}
                                 <div className="mt-8 space-y-4 rounded-md shadow-sm">
                                     <div className="mb-4">
                                         <label className="block text-black text-sm font-medium mb-2" htmlFor="name">
                                             Email ID
                                         </label>
-                                        <Field id="username" type="text" name="email" className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${!errors.email ? " " : "border-red-500"}`} placeholder="Enter Email ID" />
-                                        {errors.email && touched.email ? (
-                                         <div className='text-red-700 text-xs font-bold'>{errors.email}</div>
+                                        <Field id="username" type="text" name="officialemail" className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${!errors.officialemail ? " " : "border-red-500"}`} placeholder="Enter Email ID" />
+                                        {errors.officialemail && touched.officialemail ? (
+                                         <div className='text-red-700 text-xs font-bold'>{errors.officialemail}</div>
                                          ) : null}
                                     </div>
                                     <div className="mb-4">
@@ -99,9 +133,7 @@ const Login = () => {
                                     </div>
                                     <div>
                                         <button type="submit" className="group relative flex w-full justify-center rounded-md border border-transparent bg-blue-800 py-2 px-4 text-sm font-medium text-white ">
-                                             {/* <NavLink to="/login"> */}
                                                 Login
-                                            {/* </NavLink>  */}
                                         </button>
                                         <ToastContainer />
                                     </div>
